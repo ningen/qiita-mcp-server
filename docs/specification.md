@@ -11,6 +11,32 @@ Qiita および Qiita Team の記事検索・閲覧機能を提供する MCP (Mo
 - Qiita (https://qiita.com)
 - Qiita Team (https://teams.qiita.com)
 
+## トランスポート方式
+
+本 MCP サーバーは **SSE (Server-Sent Events)** 方式を採用しています。
+
+### 接続方法
+
+サーバーは HTTP サーバーとして動作し、以下のエンドポイントを提供します：
+
+- `GET /sse` - SSE 接続エンドポイント
+- `POST /message` - クライアントからのメッセージ受信
+- `GET /health` - ヘルスチェック
+
+デフォルトポート: 3000（環境変数 `PORT` で変更可能）
+
+### 起動方法
+
+```bash
+npm start
+```
+
+または環境変数付きで：
+
+```bash
+PORT=3000 QIITA_ACCESS_TOKEN=your_token npm start
+```
+
 ## 認証
 
 Qiita API のアクセストークンを環境変数 `QIITA_ACCESS_TOKEN` で設定します。

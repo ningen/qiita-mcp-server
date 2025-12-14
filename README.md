@@ -22,9 +22,23 @@ npm install
 npm run build
 ```
 
-## 設定
+## 起動
+
+### サーバーの起動
+
+```bash
+npm start
+```
+
+デフォルトでは `http://localhost:3000` で起動します。
 
 ### 環境変数
+
+#### ポート設定（オプション）
+
+```bash
+export PORT=3000
+```
 
 #### Qiita アクセストークン（オプション）
 
@@ -45,7 +59,15 @@ Qiita Team を使用する場合は、チーム名を設定します。
 export QIITA_TEAM=your_team_name
 ```
 
-### Claude Desktop での設定
+### 環境変数を設定して起動
+
+```bash
+QIITA_ACCESS_TOKEN=your_token PORT=3000 npm start
+```
+
+## Claude Desktop での設定
+
+本サーバーは SSE (Server-Sent Events) 方式で動作します。
 
 Claude Desktop の設定ファイルに以下を追加します。
 
@@ -57,31 +79,28 @@ Claude Desktop の設定ファイルに以下を追加します。
 {
   "mcpServers": {
     "qiita": {
-      "command": "node",
-      "args": ["/path/to/qiita-mcp-server/dist/index.js"],
-      "env": {
-        "QIITA_ACCESS_TOKEN": "your_access_token_here"
-      }
+      "url": "http://localhost:3000/sse"
     }
   }
 }
 ```
 
+**重要**: Claude Desktop から接続する前に、サーバーを起動しておく必要があります。
+
+サーバーを起動してから Claude Desktop を起動、またはリロードしてください。
+
+### 環境変数付きで起動する場合
+
+別のターミナルウィンドウで以下のコマンドを実行してサーバーを起動します：
+
+```bash
+QIITA_ACCESS_TOKEN=your_token npm start
+```
+
 Qiita Team を使用する場合：
 
-```json
-{
-  "mcpServers": {
-    "qiita-team": {
-      "command": "node",
-      "args": ["/path/to/qiita-mcp-server/dist/index.js"],
-      "env": {
-        "QIITA_ACCESS_TOKEN": "your_access_token_here",
-        "QIITA_TEAM": "your_team_name"
-      }
-    }
-  }
-}
+```bash
+QIITA_ACCESS_TOKEN=your_token QIITA_TEAM=your_team_name npm start
 ```
 
 ## 提供されるツール

@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
+import express from "express";
+import { Request, Response } from "express";
 
 // Qiita API Client
 class QiitaClient {
@@ -406,11 +408,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Start server
+// Start SSE server
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("Qiita MCP Server running on stdio");
+  const app = express();
+  const port = process.env.PORT || 3000;
+
+  app.use(express.json());
+
+  // SSE endpoint
+  app.get("/sse", async (req: Request, res: Response) => {
+    console.error("Client connecting via SSE...");
+    const transport = new SSEServerTransport("/message", res);
+    await server.connect(transport);
+    console.error("Client connected via SSE");
+  });
+
+  // Message endpoint
+  app.post("/message", async (req: Request, res: Response) => {
+    console.error("Received message from client");
+    // The SSEServerTransport handles messages internally
+    res.status(200).end();
+  });
+
+  // Health check endpoint
+  app.get("/health", (req: Request, res: Response) => {
+    res.json({ status: "ok" });
+  });
+
+  app.listen(port, () => {
+    console.error(`Qiita MCP Server running on http://localhost:${port}`);
+    console.error(`SSE endpoint: http://localhost:${port}/sse`);
+  });
 }
 
 main().catch((error) => {
