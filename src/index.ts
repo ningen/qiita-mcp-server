@@ -7,8 +7,56 @@ import {
   ListToolsRequestSchema,
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
-import express from "express";
-import { Request, Response } from "express";
+import { Hono } from "hono";
+import { z } from "zod";
+
+// Zod schemas for validation
+const SearchItemsSchema = z.object({
+  query: z.string().optional(),
+  page: z.number().min(1).max(100).optional().default(1),
+  per_page: z.number().min(1).max(100).optional().default(20),
+});
+
+const GetItemSchema = z.object({
+  item_id: z.string(),
+});
+
+const GetItemsByTagSchema = z.object({
+  tag_id: z.string(),
+  page: z.number().min(1).max(100).optional().default(1),
+  per_page: z.number().min(1).max(100).optional().default(20),
+});
+
+const GetItemsByUserSchema = z.object({
+  user_id: z.string(),
+  page: z.number().min(1).max(100).optional().default(1),
+  per_page: z.number().min(1).max(100).optional().default(20),
+});
+
+const GetTagsSchema = z.object({
+  page: z.number().min(1).max(100).optional().default(1),
+  per_page: z.number().min(1).max(100).optional().default(20),
+  sort: z.enum(["count", "name"]).optional().default("count"),
+});
+
+const GetItemCommentsSchema = z.object({
+  item_id: z.string(),
+});
+
+const GetUserStocksSchema = z.object({
+  user_id: z.string(),
+  page: z.number().min(1).max(100).optional().default(1),
+  per_page: z.number().min(1).max(100).optional().default(20),
+});
+
+// Type definitions
+type SearchItemsParams = z.infer<typeof SearchItemsSchema>;
+type GetItemParams = z.infer<typeof GetItemSchema>;
+type GetItemsByTagParams = z.infer<typeof GetItemsByTagSchema>;
+type GetItemsByUserParams = z.infer<typeof GetItemsByUserSchema>;
+type GetTagsParams = z.infer<typeof GetTagsSchema>;
+type GetItemCommentsParams = z.infer<typeof GetItemCommentsSchema>;
+type GetUserStocksParams = z.infer<typeof GetUserStocksSchema>;
 
 // Qiita API Client
 class QiitaClient {
@@ -44,82 +92,69 @@ class QiitaClient {
     return response.json();
   }
 
-  async searchItems(
-    query?: string,
-    page: number = 1,
-    perPage: number = 20
-  ): Promise<any[]> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      per_page: perPage.toString(),
+  async searchItems(params: SearchItemsParams): Promise<any[]> {
+    const validated = SearchItemsSchema.parse(params);
+    const urlParams = new URLSearchParams({
+      page: validated.page.toString(),
+      per_page: validated.per_page.toString(),
     });
 
-    if (query) {
-      params.append("query", query);
+    if (validated.query) {
+      urlParams.append("query", validated.query);
     }
 
-    return this.fetch(`/items?${params.toString()}`);
+    return this.fetch(`/items?${urlParams.toString()}`);
   }
 
-  async getItem(itemId: string): Promise<any> {
-    return this.fetch(`/items/${itemId}`);
+  async getItem(params: GetItemParams): Promise<any> {
+    const validated = GetItemSchema.parse(params);
+    return this.fetch(`/items/${validated.item_id}`);
   }
 
-  async getItemsByTag(
-    tagId: string,
-    page: number = 1,
-    perPage: number = 20
-  ): Promise<any[]> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      per_page: perPage.toString(),
+  async getItemsByTag(params: GetItemsByTagParams): Promise<any[]> {
+    const validated = GetItemsByTagSchema.parse(params);
+    const urlParams = new URLSearchParams({
+      page: validated.page.toString(),
+      per_page: validated.per_page.toString(),
     });
 
-    return this.fetch(`/tags/${tagId}/items?${params.toString()}`);
+    return this.fetch(`/tags/${validated.tag_id}/items?${urlParams.toString()}`);
   }
 
-  async getItemsByUser(
-    userId: string,
-    page: number = 1,
-    perPage: number = 20
-  ): Promise<any[]> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      per_page: perPage.toString(),
+  async getItemsByUser(params: GetItemsByUserParams): Promise<any[]> {
+    const validated = GetItemsByUserSchema.parse(params);
+    const urlParams = new URLSearchParams({
+      page: validated.page.toString(),
+      per_page: validated.per_page.toString(),
     });
 
-    return this.fetch(`/users/${userId}/items?${params.toString()}`);
+    return this.fetch(`/users/${validated.user_id}/items?${urlParams.toString()}`);
   }
 
-  async getTags(
-    page: number = 1,
-    perPage: number = 20,
-    sort: string = "count"
-  ): Promise<any[]> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      per_page: perPage.toString(),
-      sort: sort,
+  async getTags(params: GetTagsParams): Promise<any[]> {
+    const validated = GetTagsSchema.parse(params);
+    const urlParams = new URLSearchParams({
+      page: validated.page.toString(),
+      per_page: validated.per_page.toString(),
+      sort: validated.sort,
     });
 
-    return this.fetch(`/tags?${params.toString()}`);
+    return this.fetch(`/tags?${urlParams.toString()}`);
   }
 
-  async getItemComments(itemId: string): Promise<any[]> {
-    return this.fetch(`/items/${itemId}/comments`);
+  async getItemComments(params: GetItemCommentsParams): Promise<any[]> {
+    const validated = GetItemCommentsSchema.parse(params);
+    return this.fetch(`/items/${validated.item_id}/comments`);
   }
 
-  async getUserStocks(
-    userId: string,
-    page: number = 1,
-    perPage: number = 20
-  ): Promise<any[]> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      per_page: perPage.toString(),
+  async getUserStocks(params: GetUserStocksParams): Promise<any[]> {
+    const validated = GetUserStocksSchema.parse(params);
+    const urlParams = new URLSearchParams({
+      page: validated.page.toString(),
+      per_page: validated.per_page.toString(),
     });
 
-    return this.fetch(`/users/${userId}/stocks?${params.toString()}`);
+    return this.fetch(`/users/${validated.user_id}/stocks?${urlParams.toString()}`);
   }
 }
 
@@ -306,91 +341,56 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return { tools };
 });
 
-// Call tool handler
+// Call tool handler with Zod validation
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   try {
     switch (name) {
       case "search_items": {
-        const result = await qiitaClient.searchItems(
-          args?.query as string | undefined,
-          args?.page as number | undefined,
-          args?.per_page as number | undefined
-        );
+        const result = await qiitaClient.searchItems((args || {}) as any);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
       }
 
       case "get_item": {
-        if (!args?.item_id) {
-          throw new Error("item_id is required");
-        }
-        const result = await qiitaClient.getItem(args.item_id as string);
+        const result = await qiitaClient.getItem((args || {}) as any);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
       }
 
       case "get_items_by_tag": {
-        if (!args?.tag_id) {
-          throw new Error("tag_id is required");
-        }
-        const result = await qiitaClient.getItemsByTag(
-          args.tag_id as string,
-          args?.page as number | undefined,
-          args?.per_page as number | undefined
-        );
+        const result = await qiitaClient.getItemsByTag((args || {}) as any);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
       }
 
       case "get_items_by_user": {
-        if (!args?.user_id) {
-          throw new Error("user_id is required");
-        }
-        const result = await qiitaClient.getItemsByUser(
-          args.user_id as string,
-          args?.page as number | undefined,
-          args?.per_page as number | undefined
-        );
+        const result = await qiitaClient.getItemsByUser((args || {}) as any);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
       }
 
       case "get_tags": {
-        const result = await qiitaClient.getTags(
-          args?.page as number | undefined,
-          args?.per_page as number | undefined,
-          args?.sort as string | undefined
-        );
+        const result = await qiitaClient.getTags((args || {}) as any);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
       }
 
       case "get_item_comments": {
-        if (!args?.item_id) {
-          throw new Error("item_id is required");
-        }
-        const result = await qiitaClient.getItemComments(args.item_id as string);
+        const result = await qiitaClient.getItemComments((args || {}) as any);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
       }
 
       case "get_user_stocks": {
-        if (!args?.user_id) {
-          throw new Error("user_id is required");
-        }
-        const result = await qiitaClient.getUserStocks(
-          args.user_id as string,
-          args?.page as number | undefined,
-          args?.per_page as number | undefined
-        );
+        const result = await qiitaClient.getUserStocks((args || {}) as any);
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
@@ -408,36 +408,61 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Start SSE server
+// Start server with Hono and SSE support
 async function main() {
-  const app = express();
-  const port = process.env.PORT || 3000;
-
-  app.use(express.json());
-
-  // SSE endpoint
-  app.get("/sse", async (req: Request, res: Response) => {
-    console.error("Client connecting via SSE...");
-    const transport = new SSEServerTransport("/message", res);
-    await server.connect(transport);
-    console.error("Client connected via SSE");
-  });
-
-  // Message endpoint
-  app.post("/message", async (req: Request, res: Response) => {
-    console.error("Received message from client");
-    // The SSEServerTransport handles messages internally
-    res.status(200).end();
-  });
+  const app = new Hono();
+  const port = Number(process.env.PORT) || 3000;
+  const { createServer } = await import("http");
 
   // Health check endpoint
-  app.get("/health", (req: Request, res: Response) => {
-    res.json({ status: "ok" });
+  app.get("/health", (c) => {
+    return c.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  app.listen(port, () => {
+  // Message endpoint (POST)
+  app.post("/message", async (c) => {
+    return c.text("OK", 200);
+  });
+
+  // Create HTTP server that handles both SSE and Hono routes
+  const httpServer = createServer(async (req, res) => {
+    // Handle SSE endpoint
+    if (req.url === "/sse" && req.method === "GET") {
+      console.error("Client connecting via SSE...");
+      const transport = new SSEServerTransport("/message", res);
+      await server.connect(transport);
+      console.error("Client connected via SSE");
+      return;
+    }
+
+    // Handle other routes with Hono
+    const request = new Request(`http://localhost:${port}${req.url}`, {
+      method: req.method,
+      headers: req.headers as any,
+    });
+
+    const response = await app.fetch(request);
+
+    res.statusCode = response.status;
+    response.headers.forEach((value, key) => {
+      res.setHeader(key, value);
+    });
+
+    if (response.body) {
+      const reader = response.body.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(value);
+      }
+    }
+    res.end();
+  });
+
+  httpServer.listen(port, () => {
     console.error(`Qiita MCP Server running on http://localhost:${port}`);
     console.error(`SSE endpoint: http://localhost:${port}/sse`);
+    console.error(`Health check: http://localhost:${port}/health`);
   });
 }
 

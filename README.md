@@ -10,6 +10,15 @@ Qiita および Qiita Team の記事検索・閲覧機能を提供する MCP (Mo
 - 💬 コメント取得
 - ⭐ ストック（ブックマーク）記事の取得
 - 🔒 Qiita Team 対応
+- ⚡ Hono による高速なルーティング
+- ✅ Zod による型安全なバリデーション
+
+## 技術スタック
+
+- **Hono**: 軽量で高速な Web フレームワーク
+- **Zod**: TypeScript ファーストなスキーマバリデーション
+- **MCP SDK**: Model Context Protocol の公式 SDK
+- **TypeScript**: 型安全な開発
 
 ## 仕様書
 
