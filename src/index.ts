@@ -9,44 +9,109 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { Hono } from "hono";
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
-// Zod schemas for validation
+// Zod schemas for validation with descriptions
 const SearchItemsSchema = z.object({
-  query: z.string().optional(),
-  page: z.number().min(1).max(100).optional().default(1),
-  per_page: z.number().min(1).max(100).optional().default(20),
+  query: z.string().optional().describe("Search query (optional)"),
+  page: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(1)
+    .describe("Page number (1-100, default: 1)"),
+  per_page: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(20)
+    .describe("Items per page (1-100, default: 20)"),
 });
 
 const GetItemSchema = z.object({
-  item_id: z.string(),
+  item_id: z.string().describe("Article ID"),
 });
 
 const GetItemsByTagSchema = z.object({
-  tag_id: z.string(),
-  page: z.number().min(1).max(100).optional().default(1),
-  per_page: z.number().min(1).max(100).optional().default(20),
+  tag_id: z.string().describe("Tag ID (e.g., 'Python', 'JavaScript')"),
+  page: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(1)
+    .describe("Page number (1-100, default: 1)"),
+  per_page: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(20)
+    .describe("Items per page (1-100, default: 20)"),
 });
 
 const GetItemsByUserSchema = z.object({
-  user_id: z.string(),
-  page: z.number().min(1).max(100).optional().default(1),
-  per_page: z.number().min(1).max(100).optional().default(20),
+  user_id: z.string().describe("User ID"),
+  page: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(1)
+    .describe("Page number (1-100, default: 1)"),
+  per_page: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(20)
+    .describe("Items per page (1-100, default: 20)"),
 });
 
 const GetTagsSchema = z.object({
-  page: z.number().min(1).max(100).optional().default(1),
-  per_page: z.number().min(1).max(100).optional().default(20),
-  sort: z.enum(["count", "name"]).optional().default("count"),
+  page: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(1)
+    .describe("Page number (1-100, default: 1)"),
+  per_page: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(20)
+    .describe("Items per page (1-100, default: 20)"),
+  sort: z
+    .enum(["count", "name"])
+    .optional()
+    .default("count")
+    .describe("Sort order: 'count' (by item count) or 'name' (default: 'count')"),
 });
 
 const GetItemCommentsSchema = z.object({
-  item_id: z.string(),
+  item_id: z.string().describe("Article ID"),
 });
 
 const GetUserStocksSchema = z.object({
-  user_id: z.string(),
-  page: z.number().min(1).max(100).optional().default(1),
-  per_page: z.number().min(1).max(100).optional().default(20),
+  user_id: z.string().describe("User ID"),
+  page: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(1)
+    .describe("Page number (1-100, default: 1)"),
+  per_page: z
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(20)
+    .describe("Items per page (1-100, default: 20)"),
 });
 
 // Type definitions
@@ -158,165 +223,51 @@ class QiitaClient {
   }
 }
 
-// Tool definitions
+// Helper function to convert Zod schema to MCP tool input schema
+function zodToMcpSchema(schema: z.ZodType<any>): any {
+  const jsonSchema = zodToJsonSchema(schema, { $refStrategy: "none" });
+  // Remove $schema field as MCP doesn't need it
+  const { $schema, ...rest } = jsonSchema as any;
+  return rest;
+}
+
+// Tool definitions generated from Zod schemas
 const tools: Tool[] = [
   {
     name: "search_items",
     description:
       "Search Qiita articles. You can search with a query string or get recent articles without a query.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description: "Search query (optional)",
-        },
-        page: {
-          type: "number",
-          description: "Page number (1-100, default: 1)",
-          minimum: 1,
-          maximum: 100,
-        },
-        per_page: {
-          type: "number",
-          description: "Items per page (1-100, default: 20)",
-          minimum: 1,
-          maximum: 100,
-        },
-      },
-    },
+    inputSchema: zodToMcpSchema(SearchItemsSchema),
   },
   {
     name: "get_item",
     description: "Get a specific Qiita article by its ID.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        item_id: {
-          type: "string",
-          description: "Article ID",
-        },
-      },
-      required: ["item_id"],
-    },
+    inputSchema: zodToMcpSchema(GetItemSchema),
   },
   {
     name: "get_items_by_tag",
     description: "Get Qiita articles with a specific tag.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        tag_id: {
-          type: "string",
-          description: "Tag ID (e.g., 'Python', 'JavaScript')",
-        },
-        page: {
-          type: "number",
-          description: "Page number (1-100, default: 1)",
-          minimum: 1,
-          maximum: 100,
-        },
-        per_page: {
-          type: "number",
-          description: "Items per page (1-100, default: 20)",
-          minimum: 1,
-          maximum: 100,
-        },
-      },
-      required: ["tag_id"],
-    },
+    inputSchema: zodToMcpSchema(GetItemsByTagSchema),
   },
   {
     name: "get_items_by_user",
     description: "Get articles written by a specific user.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        user_id: {
-          type: "string",
-          description: "User ID",
-        },
-        page: {
-          type: "number",
-          description: "Page number (1-100, default: 1)",
-          minimum: 1,
-          maximum: 100,
-        },
-        per_page: {
-          type: "number",
-          description: "Items per page (1-100, default: 20)",
-          minimum: 1,
-          maximum: 100,
-        },
-      },
-      required: ["user_id"],
-    },
+    inputSchema: zodToMcpSchema(GetItemsByUserSchema),
   },
   {
     name: "get_tags",
     description: "Get a list of tags used in Qiita.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        page: {
-          type: "number",
-          description: "Page number (1-100, default: 1)",
-          minimum: 1,
-          maximum: 100,
-        },
-        per_page: {
-          type: "number",
-          description: "Items per page (1-100, default: 20)",
-          minimum: 1,
-          maximum: 100,
-        },
-        sort: {
-          type: "string",
-          description: "Sort order: 'count' (by item count) or 'name' (default: 'count')",
-          enum: ["count", "name"],
-        },
-      },
-    },
+    inputSchema: zodToMcpSchema(GetTagsSchema),
   },
   {
     name: "get_item_comments",
     description: "Get comments on a specific article.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        item_id: {
-          type: "string",
-          description: "Article ID",
-        },
-      },
-      required: ["item_id"],
-    },
+    inputSchema: zodToMcpSchema(GetItemCommentsSchema),
   },
   {
     name: "get_user_stocks",
     description: "Get articles that a user has stocked (bookmarked).",
-    inputSchema: {
-      type: "object",
-      properties: {
-        user_id: {
-          type: "string",
-          description: "User ID",
-        },
-        page: {
-          type: "number",
-          description: "Page number (1-100, default: 1)",
-          minimum: 1,
-          maximum: 100,
-        },
-        per_page: {
-          type: "number",
-          description: "Items per page (1-100, default: 20)",
-          minimum: 1,
-          maximum: 100,
-        },
-      },
-      required: ["user_id"],
-    },
+    inputSchema: zodToMcpSchema(GetUserStocksSchema),
   },
 ];
 
